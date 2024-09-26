@@ -7,6 +7,7 @@ LOKI_INSTALL=false
 HEADSCALE_INSTALL=false
 HEADSCALE_URL=""
 HEADSCALE_AUTHKEY=""
+LOKI_IP="localhost"  # Default value for Loki IP
 
 # Function to display usage information
 usage() {
@@ -21,6 +22,7 @@ usage() {
     echo "  -l, --install-loki                    Install Loki Docker driver."
     echo "  -e, --headscale-url <url>            Headscale endpoint URL."
     echo "  -a, --headscale-authkey <authkey>    Headscale auth key."
+    echo "  -i, --loki-ip <ip-address>           IP address for Loki."
     echo "  -h, --help                            Show this help message."
     exit 1
 }
@@ -52,6 +54,9 @@ while [[ "$1" != "" ]]; do
                                 ;;
         -a | --headscale-authkey ) shift
                                 HEADSCALE_AUTHKEY=$1
+                                ;;
+        -i | --loki-ip )        shift
+                                LOKI_IP=$1
                                 ;;
         -h | --help )           usage
                                 ;;
@@ -103,10 +108,28 @@ fi
 # Install Docker if specified
 if [ "$DOCKER_INSTALL" = true ]; then
     if ! command -v docker &> /dev/null; then
-        apt-get update
-        apt-get install -y docker.io
-        systemctl start docker
-        systemctl enable docker
+        echo "Downloading Docker installation script..."
+        curl -fsSL https://get.docker.com -o install-docker.sh
+        
+        echo "Running Docker installation script..."
+        sh install-docker.sh
+
+        groupadd docker
+
+        # Add all users to the 'docker' group
+        if [ ! -z "$USERS" ]; then
+            IFS=',' read -r -a user_array <<< "$USERS"
+            for user in "${user_array[@]}"; do
+                usermod -aG docker "$user"
+                echo "Added $user to the docker group."
+            done
+        fi
+
+        newgrp docker
+
+        echo "Docker installed successfully."
+    else
+        echo "Docker is already installed."
     fi
 fi
 
@@ -114,6 +137,26 @@ fi
 if [ "$LOKI_INSTALL" = true ]; then
     if [ "$DOCKER_INSTALL" = true ]; then
         docker plugin install grafana/loki-docker-driver:latest --alias loki --grant-all-permissions
+        
+        # Update Docker daemon to use Loki as the default logging driver
+        echo "Updating Docker daemon configuration to set Loki as the default logging driver..."
+        if [ ! -d "/etc/docker" ]; then
+            mkdir /etc/docker
+        fi
+        
+        cat <<EOF > /etc/docker/daemon.json
+{
+    "log-driver": "loki",
+    "log-opts": {
+        "loki-url": "http://$LOKI_IP:3100/loki/api/v1/push"
+    }
+}
+EOF
+
+        # Restart Docker to apply changes
+        systemctl restart docker
+
+        echo "Loki Docker driver installed and set as the default logging driver."
     else
         echo "Docker must be installed to use the Loki Docker driver."
     fi
