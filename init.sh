@@ -139,8 +139,6 @@ if [ "$DOCKER_INSTALL" = true ]; then
             done
         fi
 
-        newgrp docker
-
         echo "Docker installed successfully."
     else
         echo "Docker is already installed."
@@ -192,3 +190,10 @@ if [ ! -z "$HEADSCALE_URL" ] && [ ! -z "$HEADSCALE_AUTHKEY" ]; then
 fi
 
 echo "Script completed."
+
+if [ "$DOCKER_INSTALL" = true ]; then
+    if command -v docker &> /dev/null; then
+        newgrp docker
+    fi
+fi
+
