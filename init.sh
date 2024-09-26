@@ -69,11 +69,14 @@ done
 if [ ! -z "$GROUPS" ]; then
     IFS=',' read -r -a group_array <<< "$GROUPS"
     IFS=',' read -r -a gid_array <<< "${GROUP_IDS:-}"
-    for group in "${group_array[@]}"; do
+    for i in "${!group_array[@]}"; do
+        group="${group_array[i]}"
         gid="${gid_array[i]:-}"
         if ! getent group "$group" > /dev/null; then
             echo "Adding group: $group"
             groupadd -g "$gid" "$group"
+        else
+            echo "group $group already exists"
         fi
     done
 fi
@@ -107,6 +110,8 @@ if [ ! -z "$USERS" ]; then
                 chmod 700 "/home/$user/.ssh"
                 chmod 600 "/home/$user/.ssh/authorized_keys"
             fi
+        else
+            echo "user $user already exists"
         fi
     done
 fi
