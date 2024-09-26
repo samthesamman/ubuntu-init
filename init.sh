@@ -109,7 +109,7 @@ fi
 if [ "$DOCKER_INSTALL" = true ]; then
     if ! command -v docker &> /dev/null; then
         echo "Downloading Docker installation script..."
-        curl -fsSL https://get.docker.com -o install-docker.sh
+        curl -fSL https://get.docker.com -o install-docker.sh
         
         echo "Running Docker installation script..."
         sh install-docker.sh
