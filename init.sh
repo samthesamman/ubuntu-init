@@ -164,9 +164,24 @@ fi
 
 # Set up Headscale client if specified
 if [ ! -z "$HEADSCALE_URL" ] && [ ! -z "$HEADSCALE_AUTHKEY" ]; then
+    echo "Downloading Headscale client..."
+    HEADSCALE_VERSION="0.23.0" # See above URL for latest version, e.g. "X.Y.Z" (NOTE: do not add the "v" prefix!)
+    HEADSCALE_ARCH="amd64" # Your system architecture, e.g. "amd64"
+    wget --output-document=headscale.deb \
+    "https://github.com/juanfont/headscale/releases/download/v${HEADSCALE_VERSION}/headscale_${HEADSCALE_VERSION}_linux_${HEADSCALE_ARCH}.deb"
+    
+    apt install ./headscale.deb
+
+    systemctl enable headscale
+
+    systemctl start headscale
+    
+    systemctl status headscale
+
+
     echo "Setting up Headscale client..."
     # Assuming the headscale binary is available
-    headscale register --url "$HEADSCALE_URL" --authkey "$HEADSCALE_AUTHKEY"
+    tailscale up --login-server "$HEADSCALE_URL" --authkey "$HEADSCALE_AUTHKEY"
 fi
 
 echo "Script completed."
