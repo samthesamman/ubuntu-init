@@ -1,7 +1,6 @@
 #!/bin/bash
 
 # Default variables
-DEFAULT_PASSWORD="password123"
 DOCKER_INSTALL=false
 LOKI_INSTALL=false
 HEADSCALE_INSTALL=false
@@ -34,7 +33,7 @@ while [[ "$1" != "" ]]; do
                                 USERS=$1
                                 ;;
         -g | --groups )         shift
-                                GROUPS=$1
+                                USER_GROUPS=$1
                                 ;;
         -U | --user-ids )       shift
                                 USER_IDS=$1
@@ -66,16 +65,12 @@ while [[ "$1" != "" ]]; do
 done
 
 # Create groups if specified
-if [ ! -z "$GROUPS" ]; then
-    IFS=',' read -r -a group_array <<< "$GROUPS"
+if [ ! -z "$USER_GROUPS" ]; then
+    IFS=',' read -r -a group_array <<< "$USER_GROUPS"
     IFS=',' read -r -a gid_array <<< "${GROUP_IDS:-}"
-    echo "groups are $GROUPS"
-    echo "gids are $GROUP_IDS"
     for i in "${!group_array[@]}"; do
         group="${group_array[i]}"
         gid="${gid_array[i]:-}"
-        echo "Group $group"
-        echo "gid $gid"
         if ! getent group "$group" > /dev/null; then
             echo "Adding group: $group"
             groupadd -g "$gid" "$group"
@@ -101,10 +96,14 @@ if [ ! -z "$USERS" ]; then
             echo "Adding user: $user; uid: $uid; gid:$gid"
 
             if [ ! -z "$gid" ]; then
-                useradd -m -p "$(openssl passwd -1 $DEFAULT_PASSWORD)" -u "$uid" -g "$gid" "$user" -s /bin/bash
+                useradd -m -u "$uid" -g "$gid" "$user" -s /bin/bash
             else
-                useradd -m -p "$(openssl passwd -1 $DEFAULT_PASSWORD)" -u "$uid" "$user" -s /bin/bash
+                useradd -m -u "$uid" "$user" -s /bin/bash
             fi
+
+            # Prompt for the password
+            echo "Enter password for user $user:"
+            passwd "$user"
 
             # Create .ssh directory and authorized_keys file
             if [ ! -z "$SSH_KEY" ]; then
@@ -119,3 +118,77 @@ if [ ! -z "$USERS" ]; then
         fi
     done
 fi
+
+# Install Docker if specified
+if [ "$DOCKER_INSTALL" = true ]; then
+    if ! command -v docker &> /dev/null; then
+        echo "Downloading Docker installation script..."
+        curl -fSL https://get.docker.com -o install-docker.sh
+        
+        echo "Running Docker installation script..."
+        sh install-docker.sh
+
+        groupadd docker
+
+        # Add all users to the 'docker' group
+        if [ ! -z "$USERS" ]; then
+            IFS=',' read -r -a user_array <<< "$USERS"
+            for user in "${user_array[@]}"; do
+                usermod -aG docker "$user"
+                echo "Added $user to the docker group."
+            done
+        fi
+
+        newgrp docker
+
+        echo "Docker installed successfully."
+    else
+        echo "Docker is already installed."
+    fi
+fi
+
+# Install Loki Docker driver if specified
+if [ "$LOKI_INSTALL" = true ]; then
+    if [ "$DOCKER_INSTALL" = true ]; then
+        docker plugin install grafana/loki-docker-driver:latest --alias loki --grant-all-permissions
+        
+        # Update Docker daemon to use Loki as the default logging driver
+        echo "Updating Docker daemon configuration to set Loki as the default logging driver..."
+        if [ ! -d "/etc/docker" ]; then
+            mkdir /etc/docker
+        fi
+        
+        cat <<EOF > /etc/docker/daemon.json
+{
+    "log-driver": "loki",
+    "log-opts": {
+        "loki-url": "http://$LOKI_IP:3100/loki/api/v1/push"
+    }
+}
+EOF
+
+        # Restart Docker to apply changes
+        systemctl restart docker
+
+        echo "Loki Docker driver installed and set as the default logging driver."
+    else
+        echo "Docker must be installed to use the Loki Docker driver."
+    fi
+fi
+
+# Set up Headscale client if specified
+if [ ! -z "$HEADSCALE_URL" ] && [ ! -z "$HEADSCALE_AUTHKEY" ]; then
+    echo "Downloading Tailscale client..."
+    
+    curl -fSL https://pkgs.tailscale.com/stable/ubuntu/noble.noarmor.gpg | tee /usr/share/keyrings/tailscale-archive-keyring.gpg >/dev/null
+    curl -fSL https://pkgs.tailscale.com/stable/ubuntu/noble.tailscale-keyring.list | tee /etc/apt/sources.list.d/tailscale.list
+
+    apt-get update
+    apt-get install -y tailscale
+
+    echo "Setting up Tailscale client..."
+    # Assuming the headscale binary is available
+    tailscale up --login-server "$HEADSCALE_URL" --authkey "$HEADSCALE_AUTHKEY"
+fi
+
+echo "Script completed."
