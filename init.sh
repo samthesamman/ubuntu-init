@@ -69,9 +69,13 @@ done
 if [ ! -z "$GROUPS" ]; then
     IFS=',' read -r -a group_array <<< "$GROUPS"
     IFS=',' read -r -a gid_array <<< "${GROUP_IDS:-}"
+    echo "groups are $GROUPS"
+    echo "gids are $GROUP_IDS"
     for i in "${!group_array[@]}"; do
         group="${group_array[i]}"
         gid="${gid_array[i]:-}"
+        echo "Group $group"
+        echo "gid $gid"
         if ! getent group "$group" > /dev/null; then
             echo "Adding group: $group"
             groupadd -g "$gid" "$group"
