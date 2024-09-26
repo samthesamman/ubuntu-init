@@ -68,9 +68,12 @@ done
 # Create groups if specified
 if [ ! -z "$GROUPS" ]; then
     IFS=',' read -r -a group_array <<< "$GROUPS"
+    IFS=',' read -r -a gid_array <<< "${GROUP_IDS:-}"
     for group in "${group_array[@]}"; do
+        gid="${gid_array[i]:-}"
         if ! getent group "$group" > /dev/null; then
-            groupadd "$group"
+            echo "Adding group: $group"
+            groupadd -g "$gid" "$group"
         fi
     done
 fi
@@ -83,10 +86,13 @@ if [ ! -z "$USERS" ]; then
 
     for i in "${!user_array[@]}"; do
         user="${user_array[i]}"
+        group="${group_array[i]}"
         uid="${uid_array[i]:-}"
         gid="${gid_array[i]:-}"
 
         if ! id "$user" > /dev/null 2>&1; then
+            echo "Adding user: $user; uid: $uid; gid:$gid"
+
             if [ ! -z "$gid" ]; then
                 useradd -m -p "$(openssl passwd -1 $DEFAULT_PASSWORD)" -u "$uid" -g "$gid" "$user" -s /bin/bash
             else
@@ -97,7 +103,7 @@ if [ ! -z "$USERS" ]; then
             if [ ! -z "$SSH_KEY" ]; then
                 mkdir -p "/home/$user/.ssh"
                 echo "$SSH_KEY" >> "/home/$user/.ssh/authorized_keys"
-                chown -R "$user:$user" "/home/$user/.ssh"
+                chown -R "$user:$group" "/home/$user/.ssh"
                 chmod 700 "/home/$user/.ssh"
                 chmod 600 "/home/$user/.ssh/authorized_keys"
             fi
