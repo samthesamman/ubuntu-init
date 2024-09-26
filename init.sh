@@ -164,20 +164,13 @@ fi
 
 # Set up Headscale client if specified
 if [ ! -z "$HEADSCALE_URL" ] && [ ! -z "$HEADSCALE_AUTHKEY" ]; then
-    echo "Downloading Headscale client..."
-    HEADSCALE_VERSION="0.23.0" # See above URL for latest version, e.g. "X.Y.Z" (NOTE: do not add the "v" prefix!)
-    HEADSCALE_ARCH="amd64" # Your system architecture, e.g. "amd64"
-    wget --output-document=headscale.deb \
-    "https://github.com/juanfont/headscale/releases/download/v${HEADSCALE_VERSION}/headscale_${HEADSCALE_VERSION}_linux_${HEADSCALE_ARCH}.deb"
+    echo "Downloading Tailscale client..."
     
-    apt install ./headscale.deb
+    curl -fSL https://pkgs.tailscale.com/stable/ubuntu/noble.noarmor.gpg | tee /usr/share/keyrings/tailscale-archive-keyring.gpg >/dev/null
+    curl -fSL https://pkgs.tailscale.com/stable/ubuntu/noble.tailscale-keyring.list | tee /etc/apt/sources.list.d/tailscale.list
 
-    systemctl enable headscale
-
-    systemctl start headscale
-    
-    systemctl status headscale
-
+    apt-get update
+    apt-get install -y tailscale
 
     echo "Setting up Headscale client..."
     # Assuming the headscale binary is available
