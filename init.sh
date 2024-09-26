@@ -160,7 +160,11 @@ if [ "$LOKI_INSTALL" = true ]; then
 {
     "log-driver": "loki",
     "log-opts": {
+        "max-size": "50m",
+        "max-file": "3",
         "loki-url": "http://$LOKI_IP:3100/loki/api/v1/push"
+        "loki-pipeline-stages": "- drop:\n    expression: '.*/v1/heartbeat.*'\n  - labeldrop: [container_name,source]",
+        "loki-relabel-config": "- action: labeldrop\n  regex: \"compose_project\"\n- action: labelmap\n  regex: \"compose_service\"\n  replacement: \"container\"\n- action: labeldrop\n  regex: \"compose_service\"\n- action: labeldrop\n  regex: \"filename\""
     }
 }
 EOF
