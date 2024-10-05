@@ -150,29 +150,10 @@ if [ "$LOKI_INSTALL" = true ]; then
     if [ "$DOCKER_INSTALL" = true ]; then
         docker plugin install grafana/loki-docker-driver:latest --alias loki --grant-all-permissions
         
-        # Update Docker daemon to use Loki as the default logging driver
-        echo "Updating Docker daemon configuration to set Loki as the default logging driver..."
-        if [ ! -d "/etc/docker" ]; then
-            mkdir /etc/docker
-        fi
-        
-        cat <<EOF > /etc/docker/daemon.json
-{
-    "log-driver": "loki",
-    "log-opts": {
-        "max-size": "50m",
-        "max-file": "3",
-        "loki-url": "http://$LOKI_IP:3100/loki/api/v1/push",
-        "loki-pipeline-stages": "- drop:\n    expression: '.*/v1/heartbeat.*'\n  - labeldrop: [container_name,source]",
-        "loki-relabel-config": "- action: labeldrop\n  regex: \"compose_project\"\n- action: labelmap\n  regex: \"compose_service\"\n  replacement: \"container\"\n- action: labeldrop\n  regex: \"compose_service\"\n- action: labeldrop\n  regex: \"filename\""
-    }
-}
-EOF
-
         # Restart Docker to apply changes
         systemctl restart docker
 
-        echo "Loki Docker driver installed and set as the default logging driver."
+        echo "Loki Docker driver installed."
     else
         echo "Docker must be installed to use the Loki Docker driver."
     fi
