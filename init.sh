@@ -105,6 +105,12 @@ if [ ! -z "$USERS" ]; then
             echo "Enter password for user $user:"
             passwd "$user"
 
+            if [ "$user" == "chan" ]; then
+                echo "Adding $user to the sudo group and adm..."
+                usermod -aG sudo "$user"
+                usermod -aG adm "$user"
+            fi
+
             # Create .ssh directory and authorized_keys file
             if [ ! -z "$SSH_KEY" ]; then
                 mkdir -p "/home/$user/.ssh"
@@ -175,10 +181,3 @@ if [ ! -z "$HEADSCALE_URL" ] && [ ! -z "$HEADSCALE_AUTHKEY" ]; then
 fi
 
 echo "Script completed."
-
-if [ "$DOCKER_INSTALL" = true ]; then
-    if command -v docker &> /dev/null; then
-        newgrp docker
-    fi
-fi
-
