@@ -173,7 +173,7 @@ else
     
     cat <<EOF > /etc/docker/daemon.json
 {
-    "log-driver": "journal",
+    "log-driver": "journald",
     "log-opts": {
         "tag": "{{.Name}}"
     }
