@@ -163,6 +163,30 @@ if [ "$LOKI_INSTALL" = true ]; then
     else
         echo "Docker must be installed to use the Loki Docker driver."
     fi
+else
+    if [ "$DOCKER_INSTALL" = true ]; then
+        # Update Docker daemon to use Loki as the default logging driver
+        echo "Updating Docker daemon configuration to set journald as the default logging driver..."
+        if [ ! -d "/etc/docker" ]; then
+            mkdir /etc/docker
+        fi
+    
+    cat <<EOF > /etc/docker/daemon.json
+{
+    "log-driver": "journal",
+    "log-opts": {
+        "tag": "{{.Name}}"
+    }
+}
+EOF
+
+        # Restart Docker to apply changes
+        systemctl restart docker
+
+        echo "Journald driver set."
+    else
+        echo "Docker must be installed to use the Loki Docker driver."
+    fi
 fi
 
 # Set up Headscale client if specified

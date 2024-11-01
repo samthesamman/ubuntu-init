@@ -9,4 +9,7 @@ sh ./init.sh -u chan,dockernas -g users,dockernas -U 1026,1031 -G 100,65538 -k <
 
 more full example:
 
-sudo bash ./init.sh -u chan,dockernas -g users,dockernas -U 1026,1031 -G 100,65538 -k "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCv8ML905dPtLLM/OhbV8+7fIyRtyfU6JYz8K45xP+VfTT9dn09kZ4WHsHYguAncmrpdNrfDvQ1U+rCs9gVk5OrVP21C1Mxv1OK/0eCIjA/C9OmWsW4NB7b7VMea+u//G34jE5lgI9kyHtwKOHCTQOJUOZdudq0ZTthijXbVSpWFkCwiKSEeStQpW7C8M8e2l3G/niXWWpGiqrr8ruDHOE2ahGJBwFgdTYyJ4JGI3kyfYzFVRWw7IJFFi+g+CZv41aOBBtFw+BHVCFfv65uqQWQPcWgUa5P5YC85aYfWFDuOvEQRcnnThS+cGj9AjmiLY/HpJFhN+MKLO+T8LZicJPF chankruse@Chans-MacBook-Pro.local" -d -l -i "100.64.0.3" -e "https://hs.grumpledumps.com" -a e54d1b2e1fbcfdb2e0...
+sudo bash ./init.sh -u chan,dockernas -g users,dockernas -U 1026,1031 -G 100,65538 -k "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICFyaPv5cNpkmjARTMcAbkMLacdFjqA4rJz24mqTqPxf chankruse@Chans-MacBook-Pro-14.local" -d -l -i "100.64.0.3" -e "https://hs.grumpledumps.com" -a 982e1afed3d00a81e69ef82526cfc1bd6cd13fd12e1ccfeb
+
+
+sudo bash ./init.sh -u chan,dockernas -g users,dockernas -U 1026,1031 -G 100,65538 -k "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICFyaPv5cNpkmjARTMcAbkMLacdFjqA4rJz24mqTqPxf chankruse@Chans-MacBook-Pro-14.local" -d
